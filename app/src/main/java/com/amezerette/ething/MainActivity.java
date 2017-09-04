@@ -22,11 +22,15 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.TextView;
 import android.content.SharedPreferences;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceError;
+import 	android.widget.Toast;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     private WebView webView;
     private String rootUrl = "";
@@ -34,6 +38,15 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            Log.d(TAG, "onCreate() Restoring previous state");
+            /* restore state */
+        } else {
+            Log.d(TAG, "onCreate() No saved state available");
+            /* initialize app */
+        }
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -41,8 +54,63 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
+        drawer.addDrawerListener(toggle);
         toggle.syncState();
+
+        drawer.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerStateChanged(int arg0) {}
+
+            @Override
+            public void onDrawerSlide(View arg0, float arg1) {}
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                Log.d("DEBUG", "onDrawerOpened "+webView.getUrl());
+                String fragment = Uri.parse(webView.getUrl()).getFragment();
+                String page = "";
+                if(fragment.length()>1 && fragment.charAt(0) == '!'){
+                    page = Uri.parse(fragment.substring(1)).getLastPathSegment();
+                }
+                Log.d("DEBUG", "page = "+page);
+
+                NavigationView navigationView = (NavigationView) drawerView.findViewById(R.id.nav_view);
+                Menu menu = navigationView.getMenu();
+                int id = -1;
+
+                if (page.equals("dashboard")) {
+                    id = R.id.nav_dashboard;
+                } else if (page.equals("devices")) {
+                    id = R.id.nav_devices;
+                } else if (page.equals("data")) {
+                    id = R.id.nav_data;
+                } else if (page.equals("apps")) {
+                    id = R.id.nav_apps;
+                } else if (page.equals("settings")) {
+                    id = R.id.nav_settings;
+                } else if (page.equals("rules")) {
+                    id = R.id.nav_rules;
+                }
+
+                for (int i = 0; i < menu.size(); i++) {
+                    MenuItem item = menu.getItem(i);
+                    if (item.isChecked()) {
+                        item.setChecked(false);
+                    }
+                }
+
+                if(id!=-1) {
+                    MenuItem m = menu.findItem(id);
+                    if (m != null) {
+                        Log.d("DEBUG", "check");
+                        m.setChecked(true);
+                    }
+                }
+            }
+
+            @Override
+            public void onDrawerClosed(View arg0) {}
+        });
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -53,9 +121,12 @@ public class MainActivity extends AppCompatActivity
         webView.setWebViewClient(new MyWebViewClient());
     }
 
+
     @Override
     public void onResume() {
         super.onResume();  // Always call the superclass method first
+
+        Log.d(TAG, "onResume()");
 
         SharedPreferences preferences = getSharedPreferences(
                 getString(R.string.preference_general_file_key),
@@ -76,14 +147,26 @@ public class MainActivity extends AppCompatActivity
                 }
                 rootUrl = url;
                 webView.loadUrl(Uri.parse(rootUrl).buildUpon().appendQueryParameter("app", "android").build().toString());
+            } else {
+                Log.d(TAG, "UI.resumePollingRefresh()");
+                webView.loadUrl("javascript:UI.resumePollingRefresh()");
             }
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();  // Always call the superclass method first
+
+        Log.d(TAG, "onStop()");
+        Log.d(TAG, "UI.pausePollingRefresh()");
+        webView.loadUrl("javascript:UI.pausePollingRefresh()");
     }
 
     private class MyWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            if (Uri.parse(url).getHost().equals("lebios.no-ip.org")) {
+            if (Uri.parse(url).getHost().equals(Uri.parse(rootUrl).getHost())) {
                 // This is my web site, so do not override; let my WebView load the page
                 return false;
             }
@@ -91,6 +174,12 @@ public class MainActivity extends AppCompatActivity
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(intent);
             return true;
+        }
+
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error){
+            //Your code to do
+            Toast.makeText(MainActivity.this, "Your Internet Connection may not be active or the Ething url provided is invalid", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -123,6 +212,7 @@ public class MainActivity extends AppCompatActivity
 
         TextView navHeaderSubtitle = (TextView) findViewById(R.id.nav_header_subtitle);
         navHeaderSubtitle.setText(rootUrl);
+
 
         return true;
     }
@@ -193,5 +283,6 @@ public class MainActivity extends AppCompatActivity
         super.onRestoreInstanceState(savedInstanceState);
         webView.restoreState(savedInstanceState);
     }
+
 
 }

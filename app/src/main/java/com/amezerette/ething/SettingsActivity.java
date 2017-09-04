@@ -13,8 +13,13 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Build;
+import android.util.Log;
+
 
 public class SettingsActivity extends AppCompatActivity {
+
+    private static final String TAG = SettingsActivity.class.getSimpleName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,15 +83,18 @@ public class SettingsActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            finish();
 
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
+
+            finish();
 
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
+
+
 
 }
 
