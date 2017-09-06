@@ -148,8 +148,8 @@ public class MainActivity extends AppCompatActivity
                 rootUrl = url;
                 webView.loadUrl(Uri.parse(rootUrl).buildUpon().appendQueryParameter("app", "android").build().toString());
             } else {
-                Log.d(TAG, "UI.resumePollingRefresh()");
-                webView.loadUrl("javascript:UI.resumePollingRefresh()");
+                Log.d(TAG, "UI.startRefresh()");
+                webView.loadUrl("javascript:UI.startRefresh()");
             }
         }
     }
@@ -159,8 +159,8 @@ public class MainActivity extends AppCompatActivity
         super.onStop();  // Always call the superclass method first
 
         Log.d(TAG, "onStop()");
-        Log.d(TAG, "UI.pausePollingRefresh()");
-        webView.loadUrl("javascript:UI.pausePollingRefresh()");
+        Log.d(TAG, "UI.stopRefresh()");
+        webView.loadUrl("javascript:UI.stopRefresh()");
     }
 
     private class MyWebViewClient extends WebViewClient {
